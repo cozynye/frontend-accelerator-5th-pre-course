@@ -1,8 +1,10 @@
 import { useSavingsCalculator, useSavingsForm } from 'features/savings-calculator';
-import { useState } from 'react';
+import { CalculationResultItem, SavingProductItem } from 'features/savings-calculator/components';
+import { ChangeEvent, useState } from 'react';
 import { useSavingsProducts } from 'shared/hooks';
 import { SavingsProduct } from 'shared/types';
 import { formatNumber } from 'shared/utils';
+import { parseNumericInput } from 'shared/utils/parseNumericInput';
 import {
   Assets,
   Border,
@@ -27,8 +29,14 @@ export function SavingsCalculatorPage() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<TabValue>(TAB_VALUES.SAVINGS_PRODUCTS);
   const { data: products = [] } = useSavingsProducts();
-  const { goalAmount, monthlyAmount, term, handleGoalAmountChange, handleMonthlyAmountChange, handleTermChange } =
-    useSavingsForm();
+  const [goalAmount, setGoalAmount] = useState<number | null>(null);
+  const [monthlyAmount, setMonthlyAmount] = useState<number | null>(null);
+  const [term, setTerm] = useState<number>(12);
+
+  const handleTermChange = (value: number) => {
+    setTerm(value);
+  };
+
   const { filteredProducts, selectedProduct, recommendedProducts, calculationResult } = useSavingsCalculator({
     products,
     goalAmount,
@@ -48,7 +56,7 @@ export function SavingsCalculatorPage() {
         placeholder="목표 금액을 입력하세요"
         suffix="원"
         value={goalAmount !== null ? formatNumber(goalAmount) : ''}
-        onChange={handleGoalAmountChange}
+        onChange={e => setGoalAmount(parseNumericInput(e.target.value))}
       />
 
       <Spacing size={16} />
@@ -58,12 +66,17 @@ export function SavingsCalculatorPage() {
         placeholder="희망 월 납입액을 입력하세요"
         suffix="원"
         value={monthlyAmount !== null ? formatNumber(monthlyAmount) : ''}
-        onChange={handleMonthlyAmountChange}
+        onChange={e => setMonthlyAmount(parseNumericInput(e.target.value))}
       />
 
       <Spacing size={16} />
 
-      <SelectBottomSheet label="저축 기간" title="저축 기간을 선택해주세요" value={term} onChange={handleTermChange}>
+      <SelectBottomSheet
+        label="저축 기간"
+        title="저축 기간을 선택해주세요"
+        value={term}
+        onChange={value => setTerm(value)}
+      >
         <SelectBottomSheet.Option value={6}>6개월</SelectBottomSheet.Option>
         <SelectBottomSheet.Option value={12}>12개월</SelectBottomSheet.Option>
         <SelectBottomSheet.Option value={24}>24개월</SelectBottomSheet.Option>
@@ -89,7 +102,7 @@ export function SavingsCalculatorPage() {
             <ListRow
               key={product.id}
               onClick={() => setSelectedProductId(product.id)}
-              right={isSelected ? <Assets.Icon name="icon-check-circle-green" /> : undefined}
+              right={isSelected ? <CircleCheckIcon /> : undefined}
               contents={<SavingProductItem product={product} />}
             />
           );
@@ -139,7 +152,7 @@ export function SavingsCalculatorPage() {
               {recommendedProducts.map(product => (
                 <ListRow
                   key={product.id}
-                  right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : undefined}
+                  right={selectedProductId === product.id ? <CircleCheckIcon /> : undefined}
                   contents={<SavingProductItem product={product} />}
                 />
               ))}
@@ -152,34 +165,6 @@ export function SavingsCalculatorPage() {
   );
 }
 
-const CalculationResultItem = ({ label, price }: { label: string; price: number }) => {
-  const CALCULATION_RESULT_ITEM_STYLES = {
-    topProps: { color: colors.grey600 },
-    bottomProps: { fontWeight: 'bold', color: colors.blue600 },
-  } as const;
-  return (
-    <ListRow.Texts
-      type="2RowTypeA"
-      top={label}
-      bottom={`${formatNumber(price ?? 0)}원`}
-      {...CALCULATION_RESULT_ITEM_STYLES}
-    />
-  );
-};
-
-const SavingProductItem = ({ product }: { product: SavingsProduct }) => {
-  const SAVING_PRODUCT_ITEM_STYLES = {
-    topProps: { fontSize: 16, fontWeight: 'bold', color: colors.grey900 },
-    middleProps: { fontSize: 14, color: colors.blue600, fontWeight: 'medium' },
-    bottomProps: { fontSize: 13, color: colors.grey600 },
-  } as const;
-  return (
-    <ListRow.Texts
-      type="3RowTypeA"
-      top={product.name}
-      middle={`연 이자율: ${product.annualRate}%`}
-      bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
-      {...SAVING_PRODUCT_ITEM_STYLES}
-    />
-  );
+const CircleCheckIcon = () => {
+  return <Assets.Icon name="icon-check-circle-green" />;
 };
